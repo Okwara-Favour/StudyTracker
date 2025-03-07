@@ -46,6 +46,8 @@ public class MainPageServlet extends HttpServlet {
 		String action = request.getParameter("action");
 		JsonObject jsonResponse = new JsonObject();
 		
+		response.setContentType("application/json");
+		
 		if ("logIn".equals(action))
 		{
 			String username = request.getParameter("username");
@@ -64,8 +66,8 @@ public class MainPageServlet extends HttpServlet {
 				jsonResponse.addProperty("redirect", "session.jsp");
 				logInResponse = jsonResponse.toString();
 				HttpSession session = request.getSession();
+				session.setAttribute("username", user.getProfileName());
 				session.setAttribute("userID", user.getId()); // Store user ID in session
-				//response.sendRedirect("session.jsp");
 			}
 			
 	        response.getWriter().write(logInResponse);
@@ -84,14 +86,14 @@ public class MainPageServlet extends HttpServlet {
 			String createResponse = null;
 			if (isCreated)
 			{
-				createResponse = "Contact successfully created";
+				jsonResponse.addProperty("message", "Contact successfully created");
+				createResponse = jsonResponse.toString();
 			}
 			else
 			{
-				createResponse = "Missing information or contact already exists in database";
+				jsonResponse.addProperty("message", "Missing information or contact already exists in database");
+				createResponse = jsonResponse.toString();
 			}
-			
-		    response.setContentType("text/html");
 	        response.getWriter().write(createResponse);
 		}
 		

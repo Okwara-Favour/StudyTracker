@@ -19,7 +19,6 @@
                 url: 'MainPageServlet', // The servlet URL
                 type: 'POST', // HTTP method
                 data: formData,
-                dataType: "json", // Data to be sent to the server
                 success: function(response) {
                 	if (response.redirect) {
                         window.location.href = response.redirect; // Redirect user
@@ -41,8 +40,8 @@
 <h2>Study Tracker</h2>
     <form id = "LogIn">
     	<input type="hidden" name="action" value="logIn">
-        Username: <input type="text" name="username" value="<%= request.getAttribute("username") != null ? request.getAttribute("username") : "" %>"> <br>
-        Password: <input type="password" name="password" value="<%= request.getAttribute("password") != null ? request.getAttribute("password") : "" %>"> <br>
+        Username: <input type="text" name="username"> <br>
+        Password: <input type="password" name="password"> <br>
         <input type="submit" value="Log in">
     </form>
     
