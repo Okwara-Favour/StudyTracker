@@ -8,6 +8,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -15,7 +18,7 @@ import DatabaseModder.User;
 
 public class DatabaseLinker
 {
-	public static void CreateSession(int contactId, Session session)
+	public static Boolean CreateSession(int contactId, Session session)
 	{
 		String sql = "INSERT INTO sessions (contact_id, date, start_time, end_time, topic, comment)" + " VALUES (?, ?, ?, ?, ?, ?)";
 		try (Connection connection = ConnectionManager.getConnection()) {
@@ -31,6 +34,7 @@ public class DatabaseLinker
 			if (rows > 0)
 			{
 				System.out.println("new session inserted");
+				return true;
 			}
 			else
 			{
@@ -42,8 +46,10 @@ public class DatabaseLinker
 			e.printStackTrace();
 			System.out.println("Execution of session creation failed during statement preparation");
 		}
+		return false;
 	}
 	
+	/*
 	public static void UpdateSession(int contactId, Session session) {
 	    String sql = "UPDATE sessions SET topic = ?, comment = ? WHERE contact_id = ? AND date = ? AND start_time = ? AND end_time = ?";
 	    try (Connection connection = ConnectionManager.getConnection()) {
@@ -67,7 +73,167 @@ public class DatabaseLinker
 	        System.out.println("Execution of session update failed during statement preparation");
 	    }
 	}
+	*/
 	
+	public static String UpdateSession(int contactId, Session session, String prevTopic) {
+	    String sql = "UPDATE sessions SET ";
+	    List<String> updates = new ArrayList<>();
+	    List<Object> params = new ArrayList<>();
+
+	    if (session.getTopic() != null) {
+	        updates.add("topic = ?");
+	        params.add(session.getTopic());
+	    }
+	    if (session.getComment() != null) {
+	        updates.add("comment = ?");
+	        params.add(session.getComment());
+	    }
+
+	    if (updates.isEmpty()) {
+	        //System.out.println("No fields to update.");
+	        return "No fields to update.";
+	    }
+	    
+	    if (prevTopic == null && session.getDate() == null)
+	    {
+	    	return "Previous topic or date must be specified";
+	    }
+
+	    sql += String.join(", ", updates) + " WHERE contact_id = ?";
+	    params.add(contactId);
+	    
+	    if (prevTopic != null) {
+	        sql += " AND topic = ?";
+	        params.add(prevTopic);
+	    }
+	    
+	    if (session.getDate() != null) {
+	        sql += " AND date = ?";
+	        params.add(java.sql.Date.valueOf(session.getDate()));
+	    }
+	    
+	    if (session.getStartTime() != null) {
+	        sql += " AND start_time = ?";
+	        params.add(java.sql.Time.valueOf(session.getStartTime()));
+	    }
+	    if (session.getEndTime() != null) {
+	        sql += " AND end_time = ?";
+	        params.add(java.sql.Time.valueOf(session.getEndTime()));
+	    }
+
+	    try (Connection connection = ConnectionManager.getConnection();
+	         PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+
+	        for (int i = 0; i < params.size(); i++) {
+	            preparedStatement.setObject(i + 1, params.get(i));
+	        }
+
+	        int rows = preparedStatement.executeUpdate();
+	        if (rows > 0) {
+	            System.out.println("Session updated successfully");
+	            return "Session updated successfully";
+	        } else {
+	            System.out.println("No session found with the given details");
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	        System.out.println("Execution of session update failed during statement preparation");
+	    }
+	    
+	    return "Execution of session update failed during statement preparation";
+	}
+	
+	public static boolean isValidDateFormat(String date) {
+	    try {
+	        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+	        formatter.parse(date); // Try parsing the date
+	        return true;
+	    } catch (Exception e) {
+	        return false;
+	    }
+	}
+	
+	
+	public static boolean isValidTimeFormat(String time) {
+	    try {
+	        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+	        formatter.parse(time); // Try parsing the time
+	        return true;
+	    } catch (Exception e) {
+	        return false;
+	    }
+	}
+	
+	public static List<Session> ViewSessions(int contactId, Session session) {
+	    String sql = "SELECT * FROM sessions WHERE contact_id = ?";
+
+	    // Add conditions for the date and time formats
+	    if (session.getDate() != null) {
+	        sql += " AND date = ?";
+	    }
+	    if (session.getStartTime() != null) {
+	        sql += " AND start_time = ?";
+	    }
+	    if (session.getEndTime() != null) {
+	        sql += " AND end_time = ?";
+	    }
+	    
+	    // Add condition for topic if it's not 'None'
+	    if (session.getTopic() != null) {
+	        sql += " AND topic = ?";
+	    }
+
+	    List<Session> sessionList = new ArrayList<>();
+
+	    try (Connection connection = ConnectionManager.getConnection()) {
+	        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+	        preparedStatement.setInt(1, contactId);
+
+	        int parameterIndex = 2;
+	        // Set date parameter if valid
+	        if (session.getDate() != null) {
+	            preparedStatement.setDate(parameterIndex++, java.sql.Date.valueOf(session.getDate()));
+	        }
+
+	        // Set startTime parameter if valid
+	        if (session.getStartTime() != null) {
+	            preparedStatement.setTime(parameterIndex++, java.sql.Time.valueOf(session.getStartTime()));
+	        }
+
+	        // Set endTime parameter if valid
+	        if (session.getEndTime() != null) {
+	            preparedStatement.setTime(parameterIndex++, java.sql.Time.valueOf(session.getEndTime()));
+	        }
+
+	        // Set topic parameter if not 'None'
+	        if (session.getTopic() != null) {
+	            preparedStatement.setString(parameterIndex++, session.getTopic());
+	        }
+
+	        ResultSet resultSet = preparedStatement.executeQuery();
+
+	        while (resultSet.next()) {
+	            // Retrieve data from the result set and create session objects
+	            Session newSession = new Session(
+	                resultSet.getDate("date").toLocalDate(),
+	                resultSet.getTime("start_time").toLocalTime(),
+	                resultSet.getTime("end_time").toLocalTime(),
+	                resultSet.getString("topic"),
+	                resultSet.getString("comment")
+	            );
+
+	            sessionList.add(newSession);
+	        }
+
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	        System.out.println("Execution of session view failed during statement preparation");
+	    }
+
+	    return sessionList;
+	}
+	
+	/*
 	public static void DeleteSession(int contactId, Session session)
 	{
 		String sql = "DELETE FROM sessions WHERE contact_id = ? AND date = ? AND start_time = ? AND end_time = ?";
@@ -93,9 +259,70 @@ public class DatabaseLinker
 			e.printStackTrace();
 			System.out.println("Execution of session delete failed during statement preparation");
 		}
+	}*/
+
+
+	public static String DeleteSession(int contactId, Session session) {
+		if (session.getTopic() == null && session.getComment() == null &&
+			session.getDate() == null && session.getStartTime() == null && 
+			session.getEndTime() == null)
+		{
+			return "Cannot delete without a specified row type. Use a clear request instead";
+		}
+		
+		
+	    String sql = "DELETE FROM sessions WHERE contact_id = ?";
+	    List<Object> params = new ArrayList<>();
+	    params.add(contactId);
+	    
+	    if (session.getTopic() != null) {
+	        sql += " AND topic = ?";
+	        params.add(session.getTopic());
+	    }
+	    
+	    if (session.getComment() != null) {
+	        sql += " AND comment = ?";
+	        params.add(session.getComment());
+	    }
+	    
+	    if (session.getDate() != null) {
+	        sql += " AND date = ?";
+	        params.add(java.sql.Date.valueOf(session.getDate()));
+	    }
+	    if (session.getStartTime() != null) {
+	        sql += " AND start_time = ?";
+	        params.add(java.sql.Time.valueOf(session.getStartTime()));
+	    }
+	    if (session.getEndTime() != null) {
+	        sql += " AND end_time = ?";
+	        params.add(java.sql.Time.valueOf(session.getEndTime()));
+	    }
+
+	    try (Connection connection = ConnectionManager.getConnection();
+	         PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+
+	        for (int i = 0; i < params.size(); i++) {
+	            preparedStatement.setObject(i + 1, params.get(i));
+	        }
+
+	        int rows = preparedStatement.executeUpdate();
+	        if (rows > 0) {
+	            System.out.println("Session deleted successfully");
+	            return "Session deleted successfully";
+	        } else {
+	            System.out.println("No session found with the given details");
+	            return "No session found with the given details";
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	        System.out.println("Execution of session delete failed during statement preparation");
+	    }
+	    return "Execution of session delete failed during statement preparation";
 	}
 	
-	public static void ClearSessions(int contactId)
+
+	
+	public static String ClearSessions(int contactId)
 	{
 		String sql = "DELETE FROM sessions WHERE contact_id = ?";
 		try (Connection connection = ConnectionManager.getConnection()) {
@@ -106,10 +333,12 @@ public class DatabaseLinker
 			if (rows > 0)
 			{
 				System.out.println("all sessions cleared");
+				return "all sessions cleared";
 			}
 			else
 			{
 				System.out.println("no session recorded");
+				return "no session recorded";
 			}
 			
 		} catch (SQLException e) {
@@ -117,6 +346,7 @@ public class DatabaseLinker
 			e.printStackTrace();
 			System.out.println("Execution of sessions clear failed during statement preparation");
 		}
+		return "Execution of sessions clear failed during statement preparation";
 	}
 	
 	public static Boolean CreateContact(String profile_name, String password, String first_name, String last_name)
@@ -252,7 +482,7 @@ public class DatabaseLinker
             String topic = "Meeting";
             String comment = "Some guy changed the discussion";
             
-			UpdateSession(user.getId(), new Session(date, startTime, endTime, topic, comment));
+			UpdateSession(user.getId(), new Session(date, startTime, endTime, topic, comment), null);
 			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block

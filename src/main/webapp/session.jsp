@@ -40,56 +40,83 @@
 	<table>
     <tr>
         <td>
-            <!-- Nested table in the first column with 3 rows -->
-            <table>
-                <tr>
-                    <td>
-                    <h3>Start Session</h3>
-                    <form id = "StartSession">
-				    	<input type="hidden" name="action" value="startsession">
-				        Topic: <input type="text" name="topic"> <br>
-				        Comment: <input type="text" name="comment"> <br>
-				        <input type="submit" value="Start">
-				        <br><br>
-				        <input type="submit" value="Save">
-				    </form>
-				    <p>Start Time: <span id="startTime">None</span></p>
-					<p>Elapsed Time: <span id="elapsedTime">None</span></p>
-					<p>End Time: <span id="endTime">None</span></p>
-                    </td>
-                </tr>
-                <tr>
-                	<td>
-                    <h3>Update Session</h3>
-                    <form id = "UpdateSession">
-				    	<input type="hidden" name="action" value="updatesession">
-				        Topic: <input type="text" name="topic"> <br>
-				        Comment: <input type="text" name="comment"> <br>
-				        Date<i>(yyyy-mm-dd)</i>: <input type="text" name="date"> <br>
-				        Start Time<i>(hh:mm:ss)</i>: <input type="text" name="starttime"> <br>
-				        End Time<i>(hh:mm:ss)</i>: <input type="text" name="endtime"> <br>
-				        <input type="submit" value="Update">
-				    </form>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                    <h3>View Session</h3>
-                    <form id = "ViewSession">
-				    	<input type="hidden" name="action" value="viewsession">
-				        Date<i>(yyyy-mm-dd)</i>: <input type="text" name="date"> <br>
-				        Start Time<i>(hh:mm:ss)</i>: <input type="text" name="starttime"> <br>
-				        End Time<i>(hh:mm:ss)</i>: <input type="text" name="endtime"> <br>
-				        <input type="submit" value="View">
-				    </form>
-                    </td>
-                </tr>
-            </table>
-        </td>
+		    <h3>Select a Session Action</h3>
+		    <form id="formSelector">
+		        <label for="actionDropdown">Choose an action:</label>
+		        <select id="actionDropdown">
+		            <option value="ViewDropdown">View Session</option>
+		            <option value="StartDropdown">Start Session</option>
+		            <option value="UpdateDropdown">Update Session</option>
+		            <option value="DeleteDropdown">Delete Session</option>
+		        </select>
+		    </form>
+		
+		    <div id="startForm" style="display:none;">
+		        <h3>Start Session</h3>
+		        <form id="StartSession" action="your-server-endpoint" method="post">
+		            <input type="hidden" name="action" value="startsession">
+		            Topic: <input type="text" name="topic"><br>
+		            Comment: <input type="text" name="comment"><br>
+		            <input type="submit" value="Start">
+		            <br><br>
+		            <input type="submit" value="Save">
+		        </form>
+		        <div id = "addResponse" style = "color:red"></div>
+			    <p>Start Time: <span id="startTime">None</span></p>
+				<p>Elapsed Time: <span id="elapsedTime">None</span></p>
+				<p>End Time: <span id="endTime">None</span></p>
+		    </div>
+		
+		    <div id="updateForm" style="display:none;">
+		        <h3>Update Session</h3>
+		        <form id="UpdateSession" action="your-server-endpoint" method="post">
+		            <input type="hidden" name="action" value="updatesession">
+		            Previous Topic: <input type="text" name="prevTopic"><br>
+		            Topic: <input type="text" name="topic"><br>
+		            Comment: <input type="text" name="comment"><br>
+		            Date<i>(yyyy-mm-dd)</i>: <input type="text" name="date"><br>
+		            Start Time<i>(hh:mm:ss)</i>: <input type="text" name="starttime"><br>
+		            End Time<i>(hh:mm:ss)</i>: <input type="text" name="endtime"><br>
+		            <input type="submit" value="Update">
+		        </form>
+		        <div id = "updateResponse" style = "color:red"></div>
+		    </div>
+		
+		    <div id="viewForm" style="display:block;">
+		        <h3>View Session</h3>
+		        <form id="ViewSession" action="your-server-endpoint" method="post">
+		            <input type="hidden" name="action" value="viewsession">
+		            Topic: <input type="text" name="topic"><br>
+		            Date<i>(yyyy-mm-dd)</i>: <input type="text" name="date"><br>
+		            Start Time<i>(hh:mm:ss)</i>: <input type="text" name="startTime"><br>
+		            End Time<i>(hh:mm:ss)</i>: <input type="text" name="endTime"><br>
+		            <input type="submit" value="View">
+		        </form>
+		    </div>
+		
+		    <div id="deleteForm" style="display:none;">
+		        <h3>Delete Session</h3>
+		        <form id="DeleteSession" action="your-server-endpoint" method="post">
+		            <input type="hidden" name="action" value="deletesession">
+		            Topic: <input type="text" name="topic"><br>
+		            Comment: <input type="text" name="comment"><br>
+		            Date<i>(yyyy-mm-dd)</i>: <input type="text" name="date"><br>
+		            Start Time<i>(hh:mm:ss)</i>: <input type="text" name="starttime"><br>
+		            End Time<i>(hh:mm:ss)</i>: <input type="text" name="endtime"><br>
+		            <input id="dummyDelete" type="submit" value="Delete">
+		            <input id="dummyClear" type="submit" value="Clear">
+		            <br>
+		            <div id="realDeleteDiv"></div>
+		            <div id="realClearDiv"></div>
+		        </form>
+		        <div id = "deleteResponse" style = "color:red"></div>
+		    </div>
+		</td>
         <td>
         <h2>
         <b>Sessions</b> 
         </h2>
+        <div id="SessionTable"></div>
         </td>
     </tr>
 </table>
