@@ -1,14 +1,16 @@
 package MyServlets;
 
-import jakarta.servlet.RequestDispatcher;
+//import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+//import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import io.jsonwebtoken.*;
 
 import DatabaseModder.DatabaseLinker;
 import DatabaseModder.User;
@@ -63,11 +65,23 @@ public class MainPageServlet extends HttpServlet {
 			}
 			else
 			{
-				jsonResponse.addProperty("redirect", "session.jsp");
+				String jwtToken = Jwts.builder()
+				        .subject(user.getProfileName())
+				        .claim("userId", user.getId())
+				        .compact();
+
+				// Send the JWT token to the client
+				Cookie jwtCookie = new Cookie("jwtToken", jwtToken);
+				jwtCookie.setHttpOnly(true);  // To prevent JavaScript access
+				jwtCookie.setSecure(true);    // Only sent over HTTPS (optional, for security)
+				jwtCookie.setPath("/");  // Only sent to /session.jsp
+				response.addCookie(jwtCookie);
+				
+				jsonResponse.addProperty("redirect", "session.jsp?jwtToken=" + jwtToken);
 				logInResponse = jsonResponse.toString();
-				HttpSession session = request.getSession();
-				session.setAttribute("username", user.getProfileName());
-				session.setAttribute("userID", user.getId()); // Store user ID in session
+				//HttpSession session = request.getSession();
+				//session.setAttribute("username", user.getProfileName());
+				//session.setAttribute("userID", user.getId()); // Store user ID in session
 			}
 			
 	        response.getWriter().write(logInResponse);

@@ -1,18 +1,23 @@
 package MyServlets;
 
 import jakarta.servlet.ServletException;
+
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+//import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Base64;
 import java.util.List;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+//import io.jsonwebtoken.*;
 
 import DatabaseModder.DatabaseLinker;
 import DatabaseModder.Session;
@@ -37,9 +42,10 @@ public class SessionServlet extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
-		HttpSession session = request.getSession(false);
+		//HttpSession session = request.getSession(false);
 		
-		int userID = (int)session.getAttribute("userID");
+		//int userID = (int)session.getAttribute("userID");
+		int userID = getUserID(request, response);
 		
 		String action = request.getParameter("action");
 		JsonObject jsonResponse = new JsonObject();
@@ -89,7 +95,7 @@ public class SessionServlet extends HttpServlet {
 	        tableHtml.append("</table>");
 
 	        // Add the table HTML string to the JSON response
-	        jsonResponse.addProperty("message", sTime + " " + eTime + " " + startTime + " " + endTime);
+	        //jsonResponse.addProperty("message", sTime + " " + eTime + " " + startTime + " " + endTime);
 	        jsonResponse.addProperty("table", tableHtml.toString());
 		}
 		response.getWriter().write(jsonResponse.toString());
@@ -100,9 +106,10 @@ public class SessionServlet extends HttpServlet {
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
-		HttpSession session = request.getSession(false);
+		//HttpSession session = request.getSession(false);
 		
-		int userID = (int)session.getAttribute("userID");
+		//int userID = (int)session.getAttribute("userID");
+		int userID = getUserID(request, response);
 		
 		String action = request.getParameter("action");
 		JsonObject jsonResponse = new JsonObject();
@@ -110,6 +117,8 @@ public class SessionServlet extends HttpServlet {
 		response.setContentType("application/json");
 		
 		jsonResponse.addProperty("console", action);
+		
+		//jsonResponse.addProperty("uiade", testUserID);
 		
 		if ("startsession".equals(action))
 		{
@@ -172,7 +181,7 @@ public class SessionServlet extends HttpServlet {
 			LocalTime sTime = DatabaseLinker.isValidTimeFormat(startTime) ? LocalTime.parse(startTime) : null;
 			LocalTime eTime = DatabaseLinker.isValidTimeFormat(endTime) ? LocalTime.parse(endTime) : null;
 			
-			jsonResponse.addProperty("randomMessage", clear);
+			//jsonResponse.addProperty("randomMessage", clear);
 			
 			if (clear.equals("False"))
 			{
@@ -195,19 +204,32 @@ public class SessionServlet extends HttpServlet {
 	 */
 	protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 	    // Default empty implementation
-		HttpSession session = request.getSession(false);
-		
-		int userID = (int)session.getAttribute("userID");
-		
-		String action = request.getParameter("action");
-		JsonObject jsonResponse = new JsonObject();
-		
-		response.setContentType("application/json");
-		
-		jsonResponse.addProperty("console", action);
-		
-		
-		
-		response.getWriter().write(jsonResponse.toString());
+	}
+	
+	protected int getUserID(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+	{
+		String jwtToken = request.getParameter("jwtToken");
+
+	    if (jwtToken != null) {
+	        try {
+	            String[] chunks = jwtToken.split("\\.");
+	            
+	            Base64.Decoder decoder = Base64.getUrlDecoder();
+	            
+	            //String header = new String(decoder.decode(chunks[0]));
+	            String payload = new String(decoder.decode(chunks[1]));
+	            
+	            JsonObject jsonObject = JsonParser.parseString(payload).getAsJsonObject();
+	            return jsonObject.get("userId").getAsInt();
+
+	        } catch (Exception e) {
+	            // Handle invalid JWT token (e.g., expired or tampered)
+	            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired JWT token.");
+	            
+	        }
+	    } else {
+	        response.sendError(HttpServletResponse.SC_BAD_REQUEST, "JWT token missing.");
+	    }
+	    return -1;
 	}
 }

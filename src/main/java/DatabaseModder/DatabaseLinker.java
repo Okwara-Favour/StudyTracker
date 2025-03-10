@@ -11,7 +11,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-
+import org.tinylog.Logger;
 import com.zaxxer.hikari.HikariDataSource;
 
 import DatabaseModder.User;
@@ -33,48 +33,22 @@ public class DatabaseLinker
 			int rows = preparedStatement.executeUpdate();
 			if (rows > 0)
 			{
-				System.out.println("new session inserted");
+				Logger.info(contactId + ": " + "Created a new session");
 				return true;
 			}
 			else
 			{
-				System.out.println("Session failed to create");
+				Logger.info(contactId + ": " + "Falied to create a new session");
 			}
 			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			System.out.println("Execution of session creation failed during statement preparation");
+			Logger.error(e, contactId + ": " + "Encountered an error in create session");
 		}
 		return false;
 	}
-	
-	/*
-	public static void UpdateSession(int contactId, Session session) {
-	    String sql = "UPDATE sessions SET topic = ?, comment = ? WHERE contact_id = ? AND date = ? AND start_time = ? AND end_time = ?";
-	    try (Connection connection = ConnectionManager.getConnection()) {
-	        PreparedStatement preparedStatement = connection.prepareStatement(sql);
-	        preparedStatement.setString(1, session.getTopic());
-	        preparedStatement.setString(2, session.getComment());
-	        preparedStatement.setInt(3, contactId);
-	        preparedStatement.setDate(4, java.sql.Date.valueOf(session.getDate()));
-	        preparedStatement.setTime(5, java.sql.Time.valueOf(session.getStartTime()));
-	        preparedStatement.setTime(6, java.sql.Time.valueOf(session.getEndTime()));
-
-	        int rows = preparedStatement.executeUpdate();
-	        if (rows > 0) {
-	            System.out.println("Session updated successfully");
-	        } else {
-	            System.out.println("No session found with the given details");
-	        }
-
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	        System.out.println("Execution of session update failed during statement preparation");
-	    }
-	}
-	*/
-	
+		
 	public static String UpdateSession(int contactId, Session session, String prevTopic) {
 	    String sql = "UPDATE sessions SET ";
 	    List<String> updates = new ArrayList<>();
@@ -91,11 +65,13 @@ public class DatabaseLinker
 
 	    if (updates.isEmpty()) {
 	        //System.out.println("No fields to update.");
+	    	Logger.info(contactId + ": " + "No fields to update");
 	        return "No fields to update.";
 	    }
 	    
 	    if (prevTopic == null && session.getDate() == null)
 	    {
+	    	Logger.warn(contactId + ": " + "Previous topic or date must be specified");
 	    	return "Previous topic or date must be specified";
 	    }
 
@@ -130,17 +106,18 @@ public class DatabaseLinker
 
 	        int rows = preparedStatement.executeUpdate();
 	        if (rows > 0) {
-	            System.out.println("Session updated successfully");
+	            Logger.info(contactId + ": " + "Session updated successfully");
 	            return "Session updated successfully";
 	        } else {
-	            System.out.println("No session found with the given details");
+	            Logger.info(contactId + ": " + "No session found with the given details");
+	            return "No session found with the given details";
 	        }
 	    } catch (SQLException e) {
 	        e.printStackTrace();
-	        System.out.println("Execution of session update failed during statement preparation");
+	        Logger.error(e, contactId + ": " + "Encountered an error in update session");
 	    }
 	    
-	    return "Execution of session update failed during statement preparation";
+	    return "Something went wrong, try relogging";
 	}
 	
 	public static boolean isValidDateFormat(String date) {
@@ -227,46 +204,18 @@ public class DatabaseLinker
 
 	    } catch (SQLException e) {
 	        e.printStackTrace();
-	        System.out.println("Execution of session view failed during statement preparation");
+	        Logger.error(e, contactId + ": " + "Encountered an error in view session");
 	    }
 
 	    return sessionList;
 	}
 	
-	/*
-	public static void DeleteSession(int contactId, Session session)
-	{
-		String sql = "DELETE FROM sessions WHERE contact_id = ? AND date = ? AND start_time = ? AND end_time = ?";
-		try (Connection connection = ConnectionManager.getConnection()) {
-			PreparedStatement preparedStatement = connection.prepareStatement(sql);
-			preparedStatement.setInt(1, contactId);
-			preparedStatement.setDate(2, java.sql.Date.valueOf(session.getDate()));  // Ensures proper format
-	        preparedStatement.setTime(3, java.sql.Time.valueOf(session.getStartTime()));
-	        preparedStatement.setTime(4, java.sql.Time.valueOf(session.getEndTime()));
-			
-			int rows = preparedStatement.executeUpdate();
-			if (rows > 0)
-			{
-				System.out.println("session deleted");
-			}
-			else
-			{
-				System.out.println("session not found");
-			}
-			
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			System.out.println("Execution of session delete failed during statement preparation");
-		}
-	}*/
-
-
 	public static String DeleteSession(int contactId, Session session) {
 		if (session.getTopic() == null && session.getComment() == null &&
 			session.getDate() == null && session.getStartTime() == null && 
 			session.getEndTime() == null)
 		{
+			Logger.warn(contactId + ": " + "Cannot delete without a specified row type. Use a clear request instead");
 			return "Cannot delete without a specified row type. Use a clear request instead";
 		}
 		
@@ -307,17 +256,17 @@ public class DatabaseLinker
 
 	        int rows = preparedStatement.executeUpdate();
 	        if (rows > 0) {
-	            System.out.println("Session deleted successfully");
+	            Logger.info(contactId + ": " + "Session deleted successfully");
 	            return "Session deleted successfully";
 	        } else {
-	            System.out.println("No session found with the given details");
+	            Logger.info(contactId + ": " + "No session found with the given details");
 	            return "No session found with the given details";
 	        }
 	    } catch (SQLException e) {
 	        e.printStackTrace();
-	        System.out.println("Execution of session delete failed during statement preparation");
+	        Logger.error(e, contactId + ": " + "Encountered an error in delete session");
 	    }
-	    return "Execution of session delete failed during statement preparation";
+	    return "Something went wrong, try relogging";
 	}
 	
 
@@ -333,20 +282,21 @@ public class DatabaseLinker
 			if (rows > 0)
 			{
 				System.out.println("all sessions cleared");
+				
 				return "all sessions cleared";
 			}
 			else
 			{
-				System.out.println("no session recorded");
+				Logger.info(contactId + ": " + "No session recorded");
 				return "no session recorded";
 			}
 			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			System.out.println("Execution of sessions clear failed during statement preparation");
+			Logger.error(e, contactId + ": " + "Encountered an error in clear session");
 		}
-		return "Execution of sessions clear failed during statement preparation";
+		return "Something went wrong, try relogging";
 	}
 	
 	public static Boolean CreateContact(String profile_name, String password, String first_name, String last_name)
@@ -362,14 +312,14 @@ public class DatabaseLinker
 			int rows = preparedStatement.executeUpdate();
 			if (rows > 0)
 			{
-				System.out.println("new contact inserted");
+				Logger.info(profile_name + ": " + "New contact created");
 				return true;
 			}
 			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			System.out.println("Execution of contact creation failed during statement preparation");
+			Logger.error(e, profile_name + ": " + "Encountered an error in create contact");
 		}
 		
 		return false;
@@ -392,17 +342,17 @@ public class DatabaseLinker
                 // If result is found, create a User object and populate it
                 int userId = resultSet.getInt("id");
                 user = new User(userId, profile_name);
-                System.out.println("Log in success, " + user.toString()); 
+                Logger.info(profile_name + ": " + "Log in success");
             }
             else
-            {
-            	System.out.println("Log in failed during query, User not found"); 
+            { 
+            	Logger.info(profile_name + ": " + "Log in failed during query, User not found");
             }
 			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			System.out.println("Log In failed during statement preparation");
+			Logger.error(e, profile_name + ": " + "Encountered an error in log in user");
 		}
 		
 		return user;
@@ -417,14 +367,14 @@ public class DatabaseLinker
 
 	        int rows = preparedStatement.executeUpdate();
 	        if (rows > 0) {
-	            System.out.println("Profile name updated successfully");
+	        	Logger.info(userId + ": " + "Profile name updated successfully");
 	        } else {
-	            System.out.println("Profile name update failed. It may already exist.");
+	            Logger.info(userId + ": " + "Profile name update failed");
 	        }
 
 	    } catch (SQLException e) {
 	        e.printStackTrace();
-	        System.out.println("Error updating profile name.");
+	        Logger.error(e, userId + ": " + "Encountered an error profile name update");
 	    }
 	}
 	
@@ -443,13 +393,17 @@ public class DatabaseLinker
 			int rows = preparedStatement.executeUpdate();
 			if (rows > 0)
 			{
-				System.out.println("contact deleted");
+				Logger.info(profile_name + ": " + "Contact deleted");
+			}
+			else
+			{
+				Logger.info(profile_name + ": " + "Contact failed to delete");
 			}
 			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			System.out.println("Execution of contact deletion failed during statement preparation");
+			Logger.error(e, profile_name + ": " + "Encountered an error in delete contact");
 		}
 	}
 	

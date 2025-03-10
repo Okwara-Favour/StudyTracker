@@ -19,23 +19,12 @@
 </style>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
 <script src="Javascript/session.js"></script>
 </head>
 <body>
 <h2> Study Session Page</h2>
-	<%
-		String username = (String) session.getAttribute("username");
-		
-        if (username != null) {
-    %>
-        <h2> Welcome <%= username %>. </h2>
-    <%
-        } else {
-    %>
-        <p style="color: red;">Welcome guest.</p>
-    <%
-        }
-    %>
+<div id = "Username"></div>
 
 	<table>
     <tr>

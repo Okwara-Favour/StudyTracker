@@ -4,15 +4,34 @@ $(document).ready(function () {
 	var endTime = null;
 	var intervalId = null;
 	
+	
+	const jwtToken = getQueryParam("jwtToken");
+	if (!jwtToken) {
+	    console.warn("No JWT token found.");
+	}
+	
+	var jwtJson = parseJwt(jwtToken);
+	var username = jwtJson["sub"];
+
+	if (username != null)
+	{
+		$("#Username").html("<h2> Welcome " + username + " </h2>")
+	}
+	else
+	{
+		$("#Username").html("<p style='color: red;'>Welcome guest.</p>")	
+	}
+	
 	var sessionDataObject = {};
 	sessionDataObject["action"] = "viewallsessions";
+	sessionDataObject["jwtToken"] = jwtToken;
 	
     $.ajax({
         url: 'SessionServlet', // Servlet to handle session data
         type: 'GET', // Use GET since we're retrieving data
         data: sessionDataObject,
         success: function (response) {
-			console.log(response)
+			//console.log(response)
             if (response.table) {
                 $("#SessionTable").html(response.table); // Insert profile name into h2
             } 
@@ -32,12 +51,13 @@ $(document).ready(function () {
 		    dataObject[key] = value
 		});
 		
+		dataObject["jwtToken"] = jwtToken;
         // Get the value of the button that was clicked
 		var buttonVal = event.submitter ? event.submitter.value : $("input[type='submit']:focus").val();
 
         // Check which button was pressed
         if (buttonVal === "Start") {
-            console.log("Start button was pressed");
+            //console.log("Start button was pressed");
             startTime = new Date();
 			
 			$("#startTime").text(toTimeString(startTime)); // Update start time in HTML
@@ -55,7 +75,7 @@ $(document).ready(function () {
             }, 1000);
             // Handle logic for the "Start" button
         } else if (buttonVal === "Save") {
-            console.log("Save button was pressed");
+            //console.log("Save button was pressed");
 			endTime = new Date();
 			
 			if (startTime != null)
@@ -70,7 +90,7 @@ $(document).ready(function () {
 				    type: 'POST',
 				    data: dataObject, // Send as key-value pairs
 				    success: function(response) {
-				        console.log("Data sent successfully!", response);
+				        //console.log("Data sent successfully!", response);
 						if (response.message) {
 	                        $("#addResponse").html(response.message); // Assuming the servlet sends back HTML or a message
 	                    }
@@ -94,19 +114,20 @@ $(document).ready(function () {
         event.preventDefault(); // Prevent the default form submission (full page refresh)
 
         var formData = $(this).serialize(); // Serialize form data
+		formData += "&jwtToken=" + jwtToken;
 
         $.ajax({
             url: 'SessionServlet', // The servlet URL
             type: 'Get', // HTTP method
             data: formData, // Data to be sent to the server
 			success: function (response) {
-				console.log(response)
+				//console.log(response)
 	            if (response.table) {
 	                $("#SessionTable").html(response.table); // Insert profile name into h2
 	            }
 				if (response.message)
 				{
-					console.log(response.message)
+					//console.log(response.message)
 				}
 	        },
 	        error: function () {
@@ -119,13 +140,14 @@ $(document).ready(function () {
 	    event.preventDefault(); // Prevent the default form submission (full page refresh)
 
 	    var formData = $(this).serialize(); // Serialize form data
+		formData += "&jwtToken=" + jwtToken;
 		
 	    $.ajax({
 	        url: 'SessionServlet', // The servlet URL
 	        type: 'Post', // HTTP method
 	        data: formData, // Data to be sent to the server
 			success: function (response) {
-				console.log(response)
+				//console.log(response)
 				if (response.message)
 				{
 					$("#updateResponse").html(response.message);
@@ -147,7 +169,7 @@ $(document).ready(function () {
 		formData.forEach(function(value, key) {
 		    dataObject[key] = value
 		});
-		
+		dataObject["jwtToken"] = jwtToken;
 		dataObject["clear"] = "False";
 		
 		//var buttonVal = event.submitter ? event.submitter.value : $("input[type='submit']:focus").val();
@@ -176,7 +198,7 @@ $(document).ready(function () {
 		        type: 'Post', // HTTP method
 		        data: dataObject, // Data to be sent to the server
 				success: function (response) {
-					console.log(response)
+					//console.log(response)
 					if (response.message)
 					{
 						$("#deleteResponse").html(response.message);
@@ -198,7 +220,7 @@ $(document).ready(function () {
 		        type: 'Post', // HTTP method
 		        data: dataObject, // Data to be sent to the server
 				success: function (response) {
-					console.log(response)
+					//console.log(response)
 					if (response.message)
 					{
 						$("#deleteResponse").html(response.message);
@@ -286,4 +308,28 @@ function toTimeString(date)
 	var minutes = date.getMinutes().toString().padStart(2, '0');
 	var seconds = date.getSeconds().toString().padStart(2, '0');
 	return hours+":"+minutes+":"+seconds;
+}
+
+function getQueryParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+}
+
+function parseJwt(jwtToken) {
+    try {
+        const chunks = jwtToken.split(".");
+
+        //const header = JSON.parse(base64UrlDecode(chunks[0]));
+        const payload = JSON.parse(base64UrlDecode(chunks[1]));
+
+        return payload; // Returns the parsed payload
+    } catch (e) {
+        console.error("Invalid JWT Token", e);
+        return null;
+    }
+}
+
+function base64UrlDecode(input) {
+    let base64 = input.replace(/-/g, "+").replace(/_/g, "/");
+    return atob(base64)
 }
